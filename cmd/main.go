@@ -3,8 +3,8 @@ package main
 import (
 	"context"
 	"gogol2/internal"
-	"gogol2/renderer/mock"
-	"log/slog"
+	glog "gogol2/log"
+	"gogol2/renderer"
 	"os"
 	"os/signal"
 	"syscall"
@@ -12,14 +12,15 @@ import (
 )
 
 func main() {
+	closer := glog.InitLogger()
+	defer closer()
 	ctx, cancel := context.WithCancel(context.Background())
 	cancelChan := make(chan os.Signal, 1)
 	signal.Notify(cancelChan, syscall.SIGTERM, syscall.SIGINT)
+	r := renderer.NewShellRenderer()
+	defer r.End()
 
-	//slog.SetLogLoggerLevel(slog.LevelDebug)
 	go func() {
-		r := mock.NewMockRenderer()
-		defer r.End()
 		r.Beep()
 		r.Draw("Hello, world.go!")
 		r.Refresh()
@@ -27,18 +28,10 @@ func main() {
 
 		//y, x := r.Dimensions()
 
-		cWorld := internal.NewChannelWorld[internal.ChannelCell](r)
-		//gWorld.ref
-		//var a game.Life = cWorld.Cells()[0][0]
+		cWorld := internal.NewChannelWorld[internal.ChannelCell](r, 0.1)
 		cWorld.Bootstrap()
 
-		//gWorld := game.NewChannelWorld(x, y)
-		//
-		//world.Bootstrap()
-		//
-		//worldRenderer := internal.NewChannelWorld(world, *r)
-		//
-		slog.Info("Setup")
+		glog.GetLogger().Info("Setup")
 		for {
 			select {
 			case <-ctx.Done():
@@ -46,9 +39,7 @@ func main() {
 				return
 			default:
 				time.Sleep(100 * time.Millisecond)
-				//world.ComputeState()
-				//r.Clear()
-				//worldRenderer.Refresh()
+				cWorld.Refresh()
 				r.Refresh()
 			}
 		}
@@ -57,8 +48,10 @@ func main() {
 	select {
 	case <-cancelChan:
 		cancel()
+		r.End()
 		println("Cancelled")
 	case <-ctx.Done():
+		r.End()
 		println("Done")
 	}
 }

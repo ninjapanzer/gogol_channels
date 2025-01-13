@@ -13,7 +13,7 @@ func NewMockRenderer() renderer.Renderer {
 }
 
 func (s *Renderer) Start() {
-	slog.Debug("Start")
+	slog.Debug("Live")
 }
 
 func (s *Renderer) End() {
@@ -39,3 +39,5 @@ func (s *Renderer) Beep() {
 func (s *Renderer) Refresh() {
 	slog.Debug("Refreshed")
 }
+
+func (s *Renderer) Clear() {}

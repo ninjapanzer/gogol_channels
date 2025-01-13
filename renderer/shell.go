@@ -80,3 +80,7 @@ func (s *ShellRenderer) Beep() {
 func (s *ShellRenderer) Refresh() {
 	s.Display.Refresh()
 }
+
+func (s *ShellRenderer) Clear() {
+	s.Display.Clear()
+}

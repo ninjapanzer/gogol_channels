@@ -1,20 +1,23 @@
 package internal
 
 import (
+	glog "gogol2/log"
 	"gogol2/renderer"
-	"log/slog"
+	"math/rand"
+	"time"
 )
 
 type ChannelWorld[T ChannelCell] struct {
-	r     renderer.Renderer
-	cells [][]*ChannelCell
+	r        renderer.Renderer
+	cells    [][]*ChannelCell
+	initProb float64
 }
 
 func NewLife(state bool) *ChannelCell {
 	return NewChannelCell(state)
 }
 
-func NewChannelWorld[T ChannelCell](r renderer.Renderer) *ChannelWorld[T] {
+func NewChannelWorld[T ChannelCell](r renderer.Renderer, prob float64) *ChannelWorld[T] {
 	x, y := r.Dimensions()
 	cells := make([][]*ChannelCell, x)
 	for i := range cells {
@@ -24,21 +27,15 @@ func NewChannelWorld[T ChannelCell](r renderer.Renderer) *ChannelWorld[T] {
 		}
 	}
 	return &ChannelWorld[T]{
-		r:     r,
-		cells: cells,
+		r:        r,
+		cells:    cells,
+		initProb: prob,
 	}
 }
 
 func (w *ChannelWorld[T]) Refresh() {
-	for y, row := range w.Cells() {
-		for x, cell := range row {
-			if cell.State() {
-				w.r.DrawAt(y, x, "0")
-			} else {
-				w.r.DrawAt(y, x, "-")
-			}
-		}
-	}
+	w.r.Clear()
+	w.DrawWorld()
 	w.r.Refresh()
 }
 
@@ -50,28 +47,20 @@ func (w *ChannelWorld[T]) Cells() [][]*ChannelCell {
 }
 
 func (w *ChannelWorld[T]) Bootstrap() {
-	w.cells[0][1].SilentSetState(true)
-	w.cells[1][2].SilentSetState(true)
-	w.cells[2][0].SilentSetState(true)
-	w.cells[2][1].SilentSetState(true)
-	w.cells[2][2].SilentSetState(true)
-	w.cells[2][3].SilentSetState(true)
-	w.cells[2][4].SilentSetState(true)
-	w.cells[4][1].SilentSetState(true)
-	w.cells[4][2].SilentSetState(true)
-	w.cells[4][0].SilentSetState(true)
-	w.cells[4][1].SilentSetState(true)
-	w.cells[4][2].SilentSetState(true)
-	w.cells[4][3].SilentSetState(true)
-	w.cells[4][4].SilentSetState(true)
-	w.cells[5][1].SilentSetState(true)
-	w.cells[5][2].SilentSetState(true)
-	w.cells[5][0].SilentSetState(true)
-	w.cells[5][1].SilentSetState(true)
-	w.cells[5][2].SilentSetState(true)
-	w.cells[5][3].SilentSetState(true)
-	w.cells[5][4].SilentSetState(true)
+	w.initializeProbabilisticDistributionOfLife(w.initProb)
 	w.setupNeighborhood()
+}
+
+func (w *ChannelWorld[T]) initializeProbabilisticDistributionOfLife(prob float64) {
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+
+	for i, _ := range w.cells {
+		for j, _ := range w.cells[i] {
+			if rng.Float64() < prob {
+				w.cells[i][j].SilentSetState(true)
+			}
+		}
+	}
 }
 
 func (w *ChannelWorld[T]) setupNeighborhood() {
@@ -104,8 +93,26 @@ func linkNeighbors(cells [][]*ChannelCell, cell *ChannelCell, x, y, width, heigh
 				continue
 			}
 
-			slog.Debug("Adding Neighbor", "CX", x, "CY", y, "TX", x+i, "TH", y+j)
+			glog.GetLogger().Debug("Adding Neighbor", "CX", x, "CY", y, "TX", x+i, "TH", y+j)
 			cell.AddChannel(cells[x+i][y+j].BroadcastChan())
+			if cells[x+i][y+j].State() {
+				cell.AddNeighborState(1)
+			} else {
+				cell.AddNeighborState(0)
+			}
+		}
+	}
+	go cell.Live()
+}
+
+func (w *ChannelWorld[T]) DrawWorld() {
+	for y, row := range w.Cells() {
+		for x, cell := range row {
+			if cell.State() {
+				w.r.DrawAt(y, x, "0")
+			} else {
+				w.r.DrawAt(y, x, "-")
+			}
 		}
 	}
 }
