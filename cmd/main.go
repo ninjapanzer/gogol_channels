@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
-	"gogol2/renderer"
+	"gogol2/internal"
+	"gogol2/renderer/mock"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -14,8 +16,9 @@ func main() {
 	cancelChan := make(chan os.Signal, 1)
 	signal.Notify(cancelChan, syscall.SIGTERM, syscall.SIGINT)
 
+	//slog.SetLogLoggerLevel(slog.LevelDebug)
 	go func() {
-		r := renderer.NewShellRenderer()
+		r := mock.NewMockRenderer()
 		defer r.End()
 		r.Beep()
 		r.Draw("Hello, world.go!")
@@ -24,16 +27,18 @@ func main() {
 
 		//y, x := r.Dimensions()
 
-		//gWorld := internal.NewWorld(r)
+		cWorld := internal.NewChannelWorld[internal.ChannelCell](r)
 		//gWorld.ref
-		//gWorld.Cells()
+		//var a game.Life = cWorld.Cells()[0][0]
+		cWorld.Bootstrap()
 
-		//gWorld := game.NewWorld(x, y)
+		//gWorld := game.NewChannelWorld(x, y)
 		//
 		//world.Bootstrap()
 		//
-		//worldRenderer := internal.NewWorld(world, *r)
+		//worldRenderer := internal.NewChannelWorld(world, *r)
 		//
+		slog.Info("Setup")
 		for {
 			select {
 			case <-ctx.Done():
