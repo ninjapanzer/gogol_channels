@@ -2,13 +2,13 @@ package main
 
 import (
 	"context"
+	"github.com/gbin/goncurses"
 	"gogol2/internal"
 	glog "gogol2/log"
 	"gogol2/renderer"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 )
 
 func main() {
@@ -24,13 +24,12 @@ func main() {
 		r.Beep()
 		r.Draw("Hello, world.go!")
 		r.Refresh()
-		//r.Display.GetChar()
-
-		//y, x := r.Dimensions()
+		r.Clear()
 
 		cWorld := internal.NewChannelWorld[internal.ChannelCell](r, 0.1)
+		// If you want the whole empty world drawn so the grid is filled
+		//cWorld.Refresh()
 		cWorld.Bootstrap()
-
 		glog.GetLogger().Info("Setup")
 		for {
 			select {
@@ -38,9 +37,9 @@ func main() {
 				r.End()
 				return
 			default:
-				time.Sleep(100 * time.Millisecond)
-				cWorld.Refresh()
-				r.Refresh()
+				//Makes render choppy this one routine can run at cpu time
+				//time.Sleep(100 * time.Millisecond)
+				goncurses.Update()
 			}
 		}
 	}()

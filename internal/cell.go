@@ -13,6 +13,7 @@ type ChannelCell struct {
 	neighborChans  []<-chan bool
 	neighborStates uint
 	broadcast      chan bool
+	renderFunc     func(bool)
 }
 
 func NewChannelCell(state bool) *ChannelCell {
@@ -33,10 +34,12 @@ func (c *ChannelCell) State() bool {
 func (c *ChannelCell) SetState(state bool) {
 	c.state = state
 	c.broadcast <- state
+	c.renderFunc(c.state)
 }
 
 func (c *ChannelCell) SilentSetState(state bool) {
 	c.state = state
+	c.renderFunc(c.state)
 }
 
 func (c *ChannelCell) AddChannel(ch <-chan bool) {
@@ -56,6 +59,10 @@ func (c *ChannelCell) Live() {
 	c.listenAndUpdate()
 }
 
+func (c *ChannelCell) SetRenderer(r func(bool)) {
+	c.renderFunc = r
+}
+
 func (c *ChannelCell) listenAndUpdate() {
 	// Map to store the latest states from the channels
 	var latestStates uint = 0
@@ -65,15 +72,8 @@ func (c *ChannelCell) listenAndUpdate() {
 		for _, neighborChan := range c.neighborChans {
 			select {
 			case _ = <-neighborChan: // If a message is received on this channel
-				// Update the state for this particular neighbor
 				latestStates <<= 1
 				latestStates |= 1
-				//latestStates <<= 1
-				//if state {
-				//	latestStates |= 1 // Neighbor is alive
-				//} else {
-				//	latestStates |= 0 // Neighbor is dead
-				//}
 			default:
 				latestStates <<= 1
 				latestStates |= 0
@@ -91,7 +91,7 @@ func (c *ChannelCell) listenAndUpdate() {
 		}
 
 		// Sleep to simulate waiting for the next update
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(50 * time.Millisecond)
 	}
 }
 

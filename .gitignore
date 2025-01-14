@@ -1,3 +1,5 @@
 .idea/
+.direnv/
+
 gol
 app.log

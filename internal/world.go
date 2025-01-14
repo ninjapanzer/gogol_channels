@@ -56,11 +56,13 @@ func (w *ChannelWorld[T]) initializeProbabilisticDistributionOfLife(prob float64
 
 	for i, _ := range w.cells {
 		for j, _ := range w.cells[i] {
+			w.cells[i][j].SetRenderer(w.DrawCell(i, j))
 			if rng.Float64() < prob {
 				w.cells[i][j].SilentSetState(true)
 			}
 		}
 	}
+	w.r.Refresh()
 }
 
 func (w *ChannelWorld[T]) setupNeighborhood() {
@@ -103,6 +105,17 @@ func linkNeighbors(cells [][]*ChannelCell, cell *ChannelCell, x, y, width, heigh
 		}
 	}
 	go cell.Live()
+}
+
+func (w *ChannelWorld[T]) DrawCell(y, x int) func(bool) {
+	return func(state bool) {
+		if state {
+			w.r.DrawAt(y, x, "0")
+		} else {
+			w.r.DrawAt(y, x, "-")
+		}
+		w.r.BufferUpdate()
+	}
 }
 
 func (w *ChannelWorld[T]) DrawWorld() {

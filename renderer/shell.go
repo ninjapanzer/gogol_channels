@@ -81,6 +81,10 @@ func (s *ShellRenderer) Refresh() {
 	s.Display.Refresh()
 }
 
+func (s *ShellRenderer) BufferUpdate() {
+	s.Display.NoutRefresh()
+}
+
 func (s *ShellRenderer) Clear() {
 	s.Display.Clear()
 }

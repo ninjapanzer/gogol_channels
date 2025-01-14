@@ -8,5 +8,6 @@ type Renderer interface {
 	Start()
 	End()
 	Refresh()
+	BufferUpdate()
 	Clear()
 }

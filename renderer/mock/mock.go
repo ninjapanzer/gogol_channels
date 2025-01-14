@@ -40,4 +40,8 @@ func (s *Renderer) Refresh() {
 	slog.Debug("Refreshed")
 }
 
+func (s *Renderer) BufferUpdate() {
+	slog.Debug("BufferUpdate")
+}
+
 func (s *Renderer) Clear() {}
