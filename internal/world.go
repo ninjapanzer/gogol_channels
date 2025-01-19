@@ -3,8 +3,6 @@ package internal
 import (
 	glog "gogol2/log"
 	"gogol2/renderer"
-	"math/rand"
-	"time"
 )
 
 type ChannelWorld[T ChannelCell] struct {
@@ -52,16 +50,24 @@ func (w *ChannelWorld[T]) Bootstrap() {
 }
 
 func (w *ChannelWorld[T]) initializeProbabilisticDistributionOfLife(prob float64) {
-	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
-
+	//rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 	for i, _ := range w.cells {
 		for j, _ := range w.cells[i] {
 			w.cells[i][j].SetRenderer(w.DrawCell(i, j))
-			if rng.Float64() < prob {
-				w.cells[i][j].SilentSetState(true)
-			}
+			w.DrawCell(i, j)(false)
+			//if rng.Float64() < prob {
+			//	w.cells[i][j].SilentSetState(true)
+			//}
 		}
 	}
+
+	w.cells[0][0].SetState(true)
+	w.cells[0][1].SetState(true)
+	w.cells[1][1].SetState(true)
+	w.cells[1][2].SetState(true)
+	w.cells[2][2].SetState(true)
+	w.cells[5][2].SetState(true)
+
 	w.r.Refresh()
 }
 
@@ -79,9 +85,11 @@ func (w *ChannelWorld[T]) setupNeighborhood() {
 func linkNeighbors(cells [][]*ChannelCell, cell *ChannelCell, x, y, width, height int) {
 	for i := -1; i <= 1; i++ {
 		for j := -1; j <= 1; j++ {
-			if i == x && j == y {
+			// Skip Self
+			if i == 0 && j == 0 {
 				continue
 			}
+			// Skip Out of bounds
 			if x+i < 0 {
 				continue
 			}
@@ -104,7 +112,7 @@ func linkNeighbors(cells [][]*ChannelCell, cell *ChannelCell, x, y, width, heigh
 			}
 		}
 	}
-	go cell.Live()
+	cell.Live()
 }
 
 func (w *ChannelWorld[T]) DrawCell(y, x int) func(bool) {
