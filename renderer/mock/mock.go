@@ -1,6 +1,7 @@
 package mock
 
 import (
+	"github.com/gbin/goncurses"
 	"gogol2/renderer"
 	"log/slog"
 )
@@ -45,3 +46,7 @@ func (s *Renderer) BufferUpdate() {
 }
 
 func (s *Renderer) Clear() {}
+
+func (s *Renderer) GetChar() goncurses.Key {
+	return 0
+}

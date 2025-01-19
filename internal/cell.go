@@ -10,15 +10,17 @@ import (
 type ChannelCell struct {
 	game.Life
 	state          bool
+	location       string
 	neighborChans  []<-chan bool
 	neighborStates uint
 	broadcast      chan bool
 	renderFunc     func(bool)
 }
 
-func NewChannelCell(state bool) *ChannelCell {
+func NewChannelCell(state bool, location string) *ChannelCell {
 	b := &ChannelCell{
 		state:          state,
+		location:       location,
 		neighborChans:  make([]<-chan bool, 0),
 		neighborStates: 0,
 		broadcast:      make(chan bool, 1),
@@ -33,12 +35,13 @@ func (c *ChannelCell) State() bool {
 
 func (c *ChannelCell) SetState(state bool) {
 	c.state = state
-	c.broadcast <- state
 	c.renderFunc(c.state)
+	c.broadcast <- state
 }
 
 func (c *ChannelCell) SilentSetState(state bool) {
 	c.state = state
+	glog.GetLogger().Debug("Silent Set State:", "name", c.location, "state", c.state)
 	c.renderFunc(c.state)
 }
 
@@ -63,17 +66,30 @@ func (c *ChannelCell) SetRenderer(r func(bool)) {
 	c.renderFunc = r
 }
 
+func (c *ChannelCell) heartbeat() {
+	for {
+		time.Sleep(50 * time.Millisecond)
+		if c.state {
+			glog.GetLogger().Debug("Heartbeat", "name", c.location)
+			c.broadcast <- true
+		}
+	}
+}
+
 func (c *ChannelCell) listenAndUpdate() {
 	// Map to store the latest states from the channels
 	var latestStates uint = 0
 
 	for {
+		time.Sleep(200 * time.Millisecond)
+		gotUpdate := false
 		// Check each neighbor's channel for new state updates
 		for _, neighborChan := range c.neighborChans {
 			select {
 			case _ = <-neighborChan: // If a message is received on this channel
 				latestStates <<= 1
 				latestStates |= 1
+				gotUpdate = true
 			default:
 				latestStates <<= 1
 				latestStates |= 0
@@ -85,13 +101,10 @@ func (c *ChannelCell) listenAndUpdate() {
 		// For example, we can just print the new state based on the latest updates:
 		oldState := c.state
 		newState, reason := c.computeStateFromNeighbors(latestStates)
-		if oldState != newState {
-			c.SetState(newState)
-			glog.GetLogger().Info("Cell Updated", "New State", c.state, "Reason", reason, "Old State", oldState)
+		if gotUpdate && (oldState != newState) {
+			c.SilentSetState(newState)
+			glog.GetLogger().Debug("Cell Updated", "name", c.location, "New State", c.state, "Reason", reason, "Old State", oldState)
 		}
-
-		// Sleep to simulate waiting for the next update
-		time.Sleep(50 * time.Millisecond)
 	}
 }
 

@@ -2,6 +2,7 @@ package renderer
 
 import (
 	"github.com/gbin/goncurses"
+	glog "gogol2/log"
 )
 
 type ShellRenderer struct {
@@ -11,15 +12,22 @@ type ShellRenderer struct {
 	Padding int
 }
 
-func NewShellRenderer() Renderer {
+func NewShellRenderer(padding int) Renderer {
 	screen, err := goncurses.Init()
+	goncurses.Echo(false)
+	goncurses.Cursor(0)
+	screen.Keypad(true)
+	if goncurses.MouseOk() {
+		glog.GetLogger().Warn("Mouse support not detected.")
+	}
+	goncurses.MouseMask(goncurses.M_B1_PRESSED, nil)
 	if err != nil {
 		panic(err)
 	}
 
 	s := ShellRenderer{
 		screen:  screen,
-		Padding: 2,
+		Padding: padding,
 	}
 	s.Start()
 	return &s
@@ -32,6 +40,7 @@ func (s *ShellRenderer) Start() {
 			panic(err)
 		}
 	}
+	glog.GetLogger().Info("Starting Window", "height", y, "width", x)
 	w, err := goncurses.NewWindow(y, x, 0, 0)
 	if err != nil {
 		panic(err)
@@ -61,7 +70,8 @@ func (s *ShellRenderer) End() {
 	goncurses.End()
 }
 
-func (s *ShellRenderer) Dimensions() (int, int) {
+// Returns y,x
+func (s *ShellRenderer) Dimensions() (y int, x int) {
 	return s.screen.MaxYX()
 }
 
@@ -78,7 +88,7 @@ func (s *ShellRenderer) Beep() {
 }
 
 func (s *ShellRenderer) Refresh() {
-	s.Display.Refresh()
+	s.screen.Refresh()
 }
 
 func (s *ShellRenderer) BufferUpdate() {
@@ -87,4 +97,8 @@ func (s *ShellRenderer) BufferUpdate() {
 
 func (s *ShellRenderer) Clear() {
 	s.Display.Clear()
+}
+
+func (s *ShellRenderer) GetChar() goncurses.Key {
+	return s.screen.GetChar()
 }

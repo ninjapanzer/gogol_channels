@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"fmt"
 	glog "gogol2/log"
 	"gogol2/renderer"
 	"math/rand"
@@ -13,17 +14,17 @@ type ChannelWorld[T ChannelCell] struct {
 	initProb float64
 }
 
-func NewLife(state bool) *ChannelCell {
-	return NewChannelCell(state)
-}
+//func NewLife(state bool) *ChannelCell {
+//	return NewChannelCell(state)
+//}
 
 func NewChannelWorld[T ChannelCell](r renderer.Renderer, prob float64) *ChannelWorld[T] {
-	x, y := r.Dimensions()
-	cells := make([][]*ChannelCell, x)
+	y, x := r.Dimensions()
+	cells := make([][]*ChannelCell, y)
 	for i := range cells {
-		cells[i] = make([]*ChannelCell, y)
+		cells[i] = make([]*ChannelCell, x)
 		for j := range cells[i] {
-			cells[i][j] = NewChannelCell(false)
+			cells[i][j] = NewChannelCell(false, fmt.Sprintf("%s-%s", i, j))
 		}
 	}
 	return &ChannelWorld[T]{
@@ -36,7 +37,7 @@ func NewChannelWorld[T ChannelCell](r renderer.Renderer, prob float64) *ChannelW
 func (w *ChannelWorld[T]) Refresh() {
 	w.r.Clear()
 	w.DrawWorld()
-	w.r.Refresh()
+	w.Refresh()
 }
 
 func (w *ChannelWorld[T]) ComputeState() {
@@ -56,18 +57,20 @@ func (w *ChannelWorld[T]) initializeProbabilisticDistributionOfLife(prob float64
 
 	for i, _ := range w.cells {
 		for j, _ := range w.cells[i] {
-			w.cells[i][j].SetRenderer(w.DrawCell(i, j))
+			target := w.cells[i][j]
+			target.SetRenderer(w.DrawCell(i, j))
 			if rng.Float64() < prob {
-				w.cells[i][j].SilentSetState(true)
+				target.SilentSetState(true)
 			}
+			w.DrawCell(i, j)
 		}
 	}
 	w.r.Refresh()
 }
 
 func (w *ChannelWorld[T]) setupNeighborhood() {
-	width := len(w.cells)
-	height := len(w.cells[0])
+	height := len(w.cells)
+	width := len(w.cells[0])
 
 	for i, _ := range w.cells {
 		for j, _ := range w.cells[i] {
@@ -76,34 +79,35 @@ func (w *ChannelWorld[T]) setupNeighborhood() {
 	}
 }
 
-func linkNeighbors(cells [][]*ChannelCell, cell *ChannelCell, x, y, width, height int) {
+func linkNeighbors(cells [][]*ChannelCell, cell *ChannelCell, y, x, width, height int) {
 	for i := -1; i <= 1; i++ {
 		for j := -1; j <= 1; j++ {
-			if i == x && j == y {
+			if i == y && j == x {
 				continue
 			}
-			if x+i < 0 {
+			if y+i < 0 {
 				continue
 			}
-			if x+i >= width {
+			if y+i >= height {
 				continue
 			}
-			if y+j < 0 {
+			if x+j < 0 {
 				continue
 			}
-			if y+j >= height {
+			if x+j >= width {
 				continue
 			}
 
-			glog.GetLogger().Debug("Adding Neighbor", "CX", x, "CY", y, "TX", x+i, "TH", y+j)
-			cell.AddChannel(cells[x+i][y+j].BroadcastChan())
-			if cells[x+i][y+j].State() {
+			glog.GetLogger().Info("Adding Neighbor", "CX", x, "CY", y, "TX", x+i, "TY", y+j)
+			cell.AddChannel(cells[y+i][x+j].BroadcastChan())
+			if cells[y+i][x+j].State() {
 				cell.AddNeighborState(1)
 			} else {
 				cell.AddNeighborState(0)
 			}
 		}
 	}
+	go cell.heartbeat()
 	go cell.Live()
 }
 

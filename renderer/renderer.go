@@ -1,5 +1,7 @@
 package renderer
 
+import "github.com/gbin/goncurses"
+
 type Renderer interface {
 	Beep()
 	Draw(string)
@@ -10,4 +12,5 @@ type Renderer interface {
 	Refresh()
 	BufferUpdate()
 	Clear()
+	GetChar() goncurses.Key
 }

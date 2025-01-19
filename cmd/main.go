@@ -17,20 +17,43 @@ func main() {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancelChan := make(chan os.Signal, 1)
 	signal.Notify(cancelChan, syscall.SIGTERM, syscall.SIGINT)
-	r := renderer.NewShellRenderer()
+	r := renderer.NewShellRenderer(0)
 	defer r.End()
+
+	cWorld := internal.NewChannelWorld[internal.ChannelCell](r, 0.1)
+	cWorld.Bootstrap()
+	goncurses.Update()
+
+	go func() {
+		for {
+			ch := r.GetChar() // Wait for input
+
+			// Check for mouse event
+			glog.GetLogger().Debug("event", "int", ch, "mousekey", goncurses.KEY_MOUSE)
+			if ch == goncurses.KEY_MOUSE {
+				// Capture mouse event
+				mevent := goncurses.GetMouse()
+				mx := int(mevent.X)
+				my := int(mevent.Y)
+
+				//cWorld.DrawCell(my, mx)
+				glog.GetLogger().Debug("mouse event", "y", my, "x", mx)
+				target := cWorld.Cells()[my][mx]
+				target.SilentSetState(!target.State())
+			} else if ch == 'q' { // Quit on 'q' press
+				break
+			}
+		}
+	}()
 
 	go func() {
 		r.Beep()
 		r.Draw("Hello, world.go!")
 		r.Refresh()
 		r.Clear()
-
-		cWorld := internal.NewChannelWorld[internal.ChannelCell](r, 0.1)
 		// If you want the whole empty world drawn so the grid is filled
 		//cWorld.Refresh()
-		cWorld.Bootstrap()
-		glog.GetLogger().Info("Setup")
+		glog.GetLogger().Info("Rendering")
 		for {
 			select {
 			case <-ctx.Done():
@@ -38,7 +61,6 @@ func main() {
 				return
 			default:
 				//Makes render choppy this one routine can run at cpu time
-				//time.Sleep(100 * time.Millisecond)
 				goncurses.Update()
 			}
 		}
