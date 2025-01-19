@@ -20,7 +20,7 @@ func main() {
 	r := renderer.NewShellRenderer(0)
 	defer r.End()
 
-	cWorld := internal.NewChannelWorld[internal.ChannelCell](r, 0.1)
+	cWorld := internal.NewChannelWorld[internal.ChannelCell](r, 0.13)
 	cWorld.Bootstrap()
 	goncurses.Update()
 

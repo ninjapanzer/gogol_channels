@@ -4,6 +4,7 @@ import (
 	"gogol2/game"
 	glog "gogol2/log"
 	"math/bits"
+	"math/rand"
 	"time"
 )
 
@@ -11,6 +12,7 @@ type ChannelCell struct {
 	game.Life
 	state          bool
 	location       string
+	speed          int
 	neighborChans  []<-chan bool
 	neighborStates uint
 	broadcast      chan bool
@@ -18,9 +20,11 @@ type ChannelCell struct {
 }
 
 func NewChannelCell(state bool, location string) *ChannelCell {
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 	b := &ChannelCell{
 		state:          state,
 		location:       location,
+		speed:          int(rng.Float32() * 1000),
 		neighborChans:  make([]<-chan bool, 0),
 		neighborStates: 0,
 		broadcast:      make(chan bool, 1),
@@ -68,7 +72,7 @@ func (c *ChannelCell) SetRenderer(r func(bool)) {
 
 func (c *ChannelCell) heartbeat() {
 	for {
-		time.Sleep(50 * time.Millisecond)
+		time.Sleep(time.Duration(c.speed) * time.Millisecond)
 		if c.state {
 			glog.GetLogger().Debug("Heartbeat", "name", c.location)
 			c.broadcast <- true
@@ -81,15 +85,15 @@ func (c *ChannelCell) listenAndUpdate() {
 	var latestStates uint = 0
 
 	for {
-		time.Sleep(200 * time.Millisecond)
-		gotUpdate := false
+		time.Sleep(time.Duration(c.speed) * time.Millisecond)
+		//gotUpdate := false
 		// Check each neighbor's channel for new state updates
 		for _, neighborChan := range c.neighborChans {
 			select {
 			case _ = <-neighborChan: // If a message is received on this channel
 				latestStates <<= 1
 				latestStates |= 1
-				gotUpdate = true
+				//gotUpdate = true
 			default:
 				latestStates <<= 1
 				latestStates |= 0
@@ -101,7 +105,7 @@ func (c *ChannelCell) listenAndUpdate() {
 		// For example, we can just print the new state based on the latest updates:
 		oldState := c.state
 		newState, reason := c.computeStateFromNeighbors(latestStates)
-		if gotUpdate && (oldState != newState) {
+		if oldState != newState {
 			c.SilentSetState(newState)
 			glog.GetLogger().Debug("Cell Updated", "name", c.location, "New State", c.state, "Reason", reason, "Old State", oldState)
 		}
