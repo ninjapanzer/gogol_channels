@@ -6,7 +6,7 @@ type Renderer interface {
 	Beep()
 	Draw(string)
 	DrawAt(int, int, string)
-	Dimensions() (int, int)
+	Dimensions() (y int, x int)
 	Start()
 	End()
 	Refresh()

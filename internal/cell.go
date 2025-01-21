@@ -17,6 +17,7 @@ type ChannelCell struct {
 	neighborStates uint
 	broadcast      chan bool
 	renderFunc     func(bool)
+	statsFunc      func(event CellEvent)
 }
 
 func NewChannelCell(state bool, location string) *ChannelCell {
@@ -28,6 +29,7 @@ func NewChannelCell(state bool, location string) *ChannelCell {
 		neighborChans:  make([]<-chan bool, 0),
 		neighborStates: 0,
 		broadcast:      make(chan bool, 1),
+		statsFunc:      func(event CellEvent) {},
 	}
 
 	return b
@@ -40,6 +42,7 @@ func (c *ChannelCell) State() bool {
 func (c *ChannelCell) SetState(state bool) {
 	c.state = state
 	c.renderFunc(c.state)
+	c.statsBroadcast()
 	c.broadcast <- state
 }
 
@@ -70,11 +73,17 @@ func (c *ChannelCell) SetRenderer(r func(bool)) {
 	c.renderFunc = r
 }
 
+func (c *ChannelCell) SetStatsFunc(s func(event CellEvent)) {
+	c.statsFunc = s
+}
+
 func (c *ChannelCell) heartbeat() {
 	for {
 		time.Sleep(time.Duration(c.speed) * time.Millisecond)
+		c.statsHeartbeat()
 		if c.state {
 			glog.GetLogger().Debug("Heartbeat", "name", c.location)
+			c.statsBroadcast()
 			c.broadcast <- true
 		}
 	}
@@ -106,7 +115,12 @@ func (c *ChannelCell) listenAndUpdate() {
 		oldState := c.state
 		newState, reason := c.computeStateFromNeighbors(latestStates)
 		if oldState != newState {
-			c.SilentSetState(newState)
+			if newState {
+				c.SilentSetState(newState)
+			} else {
+				c.statsDied()
+				c.SetState(newState)
+			}
 			glog.GetLogger().Debug("Cell Updated", "name", c.location, "New State", c.state, "Reason", reason, "Old State", oldState)
 		}
 	}
@@ -131,13 +145,42 @@ func (c *ChannelCell) computeStateFromNeighbors(latestStates uint) (bool, string
 		if aliveCount < 2 || aliveCount > 3 {
 			return false, "Under or Over Population"
 		} else {
-			return true, "Porrige Just Right"
+			return true, "Porridge Just Right"
 		}
 	} else {
 		if aliveCount == 3 {
+			c.statsResurrected()
 			return true, "Nobody Expects the Cellular Resurrection"
 		}
 	}
 
 	return false, "Still Mostly Dead"
+}
+
+func (c *ChannelCell) statsBroadcast() {
+	c.statsFunc(CellEvent{
+		name:  Broadcast,
+		count: 1,
+	})
+}
+
+func (c *ChannelCell) statsHeartbeat() {
+	//c.statsFunc(CellEvent{
+	//	name:  Heartbeat,
+	//	count: 1,
+	//})
+}
+
+func (c *ChannelCell) statsDied() {
+	c.statsFunc(CellEvent{
+		name:  Died,
+		count: 1,
+	})
+}
+
+func (c *ChannelCell) statsResurrected() {
+	c.statsFunc(CellEvent{
+		name:  Resurrected,
+		count: 1,
+	})
 }

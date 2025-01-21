@@ -10,13 +10,10 @@ import (
 
 type ChannelWorld[T ChannelCell] struct {
 	r        renderer.Renderer
+	s        *Stats
 	cells    [][]*ChannelCell
 	initProb float64
 }
-
-//func NewLife(state bool) *ChannelCell {
-//	return NewChannelCell(state)
-//}
 
 func NewChannelWorld[T ChannelCell](r renderer.Renderer, prob float64) *ChannelWorld[T] {
 	y, x := r.Dimensions()
@@ -29,6 +26,7 @@ func NewChannelWorld[T ChannelCell](r renderer.Renderer, prob float64) *ChannelW
 	}
 	return &ChannelWorld[T]{
 		r:        r,
+		s:        NewStats(r, "bottom"),
 		cells:    cells,
 		initProb: prob,
 	}
@@ -59,6 +57,7 @@ func (w *ChannelWorld[T]) initializeProbabilisticDistributionOfLife(prob float64
 		for j, _ := range w.cells[i] {
 			target := w.cells[i][j]
 			target.SetRenderer(w.DrawCell(i, j))
+			target.SetStatsFunc(w.s.AddEvent)
 			if rng.Float64() < prob {
 				target.SilentSetState(true)
 			}
