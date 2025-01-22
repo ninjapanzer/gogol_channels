@@ -2,6 +2,7 @@ package internal
 
 import (
 	"fmt"
+	"github.com/gbin/goncurses"
 	glog "gogol2/log"
 	"gogol2/renderer"
 	"strings"
@@ -22,6 +23,7 @@ type CellEvent struct {
 
 type Stats struct {
 	r                  renderer.Renderer
+	st                 *goncurses.Window
 	x, y               int
 	heartbeats         int64
 	heartbeatPerSecond int64
@@ -33,9 +35,14 @@ type Stats struct {
 }
 
 func NewStats(r renderer.Renderer, location string) *Stats {
-	y, _ := r.Dimensions()
+	y, x := r.Dimensions()
+	st, err := goncurses.NewWindow(3, x, y-3, 1)
+	if err != nil {
+		panic(err)
+	}
 	s := &Stats{
 		r:          r,
+		st:         st,
 		y:          y - 1,
 		x:          1,
 		heartbeats: 0,
@@ -115,8 +122,8 @@ func (s *Stats) String() string {
 
 func (s *Stats) Update() {
 	m := s.String()
-	s.r.DrawAt(s.y, s.x+1, strings.Repeat("_", len(m)+20))
-	s.r.DrawAt(s.y-1, s.x+2, m)
+	s.st.MovePrint(0, 0, strings.Repeat(" ", len(m)+20))
+	s.st.MovePrint(1, 0, m)
 	glog.GetLogger().Debug("stats update", "Data", s.String())
-	s.r.BufferUpdate()
+	s.st.NoutRefresh()
 }

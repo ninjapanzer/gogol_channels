@@ -14,16 +14,16 @@ type ShellRenderer struct {
 
 func NewShellRenderer(padding int) Renderer {
 	screen, err := goncurses.Init()
-	goncurses.Echo(false)
-	goncurses.Cursor(0)
-	screen.Keypad(true)
-	if goncurses.MouseOk() {
-		glog.GetLogger().Warn("Mouse support not detected.")
-	}
-	goncurses.MouseMask(goncurses.M_B1_PRESSED, nil)
 	if err != nil {
 		panic(err)
 	}
+	goncurses.Echo(false)
+	goncurses.Cursor(0)
+	//screen.Keypad(true)
+	//if goncurses.MouseOk() {
+	//	glog.GetLogger().Warn("Mouse support not detected.")
+	//}
+	//goncurses.MouseMask(goncurses.M_B1_PRESSED, nil)
 
 	s := ShellRenderer{
 		screen:  screen,
