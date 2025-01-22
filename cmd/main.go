@@ -25,27 +25,27 @@ func main() {
 	cWorld.Bootstrap()
 	goncurses.Update()
 
-	//go func() {
-	//	for {
-	//		ch := r.GetChar() // Wait for input
-	//
-	//		// Check for mouse event
-	//		glog.GetLogger().Debug("event", "int", ch, "mousekey", goncurses.KEY_MOUSE)
-	//		if ch == goncurses.KEY_MOUSE {
-	//			// Capture mouse event
-	//			mevent := goncurses.GetMouse()
-	//			mx := int(mevent.X)
-	//			my := int(mevent.Y)
-	//
-	//			//cWorld.DrawCell(my, mx)
-	//			glog.GetLogger().Debug("mouse event", "y", my, "x", mx)
-	//			target := cWorld.Cells()[my][mx]
-	//			target.SilentSetState(!target.State())
-	//		} else if ch == 'q' { // Quit on 'q' press
-	//			break
-	//		}
-	//	}
-	//}()
+	go func() {
+		for {
+			ch := r.GetChar() // Wait for input
+
+			// Check for mouse event
+			glog.GetLogger().Debug("event", "int", ch, "mousekey", goncurses.KEY_MOUSE)
+			if ch == goncurses.KEY_MOUSE {
+				// Capture mouse event
+				mevent := goncurses.GetMouse()
+				mx := int(mevent.X)
+				my := int(mevent.Y)
+
+				//cWorld.DrawCell(my, mx)
+				glog.GetLogger().Debug("mouse event", "y", my, "x", mx)
+				target := cWorld.Cells()[my][mx]
+				target.SilentSetState(!target.State())
+			} else if ch == 'q' { // Quit on 'q' press
+				break
+			}
+		}
+	}()
 
 	go func() {
 		r.Beep()

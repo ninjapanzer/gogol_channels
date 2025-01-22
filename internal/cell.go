@@ -12,7 +12,8 @@ type ChannelCell struct {
 	game.Life
 	state          bool
 	location       string
-	speed          int
+	speed          time.Duration
+	ticker         *time.Ticker
 	neighborChans  []<-chan bool
 	neighborStates uint
 	broadcast      chan bool
@@ -22,10 +23,12 @@ type ChannelCell struct {
 
 func NewChannelCell(state bool, location string) *ChannelCell {
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+	speed := time.Duration(rng.Float64()*1000) + 1
 	b := &ChannelCell{
 		state:          state,
 		location:       location,
-		speed:          int(rng.Float32() * 1000),
+		speed:          speed,
+		ticker:         time.NewTicker(speed * time.Millisecond),
 		neighborChans:  make([]<-chan bool, 0),
 		neighborStates: 0,
 		broadcast:      make(chan bool, 1),
@@ -80,8 +83,8 @@ func (c *ChannelCell) SetStatsFunc(s func(event CellEvent)) {
 func (c *ChannelCell) heartbeat() {
 	for {
 		time.Sleep(time.Duration(c.speed) * time.Millisecond)
-		c.statsHeartbeat()
 		if c.state {
+			c.statsHeartbeat()
 			glog.GetLogger().Debug("Heartbeat", "name", c.location)
 			c.statsBroadcast()
 			c.broadcast <- true
@@ -95,8 +98,6 @@ func (c *ChannelCell) listenAndUpdate() {
 
 	for {
 		time.Sleep(time.Duration(c.speed) * time.Millisecond)
-		//gotUpdate := false
-		// Check each neighbor's channel for new state updates
 		for _, neighborChan := range c.neighborChans {
 			select {
 			case _ = <-neighborChan: // If a message is received on this channel
@@ -165,10 +166,10 @@ func (c *ChannelCell) statsBroadcast() {
 }
 
 func (c *ChannelCell) statsHeartbeat() {
-	//c.statsFunc(CellEvent{
-	//	name:  Heartbeat,
-	//	count: 1,
-	//})
+	c.statsFunc(CellEvent{
+		name:  Heartbeat,
+		count: 1,
+	})
 }
 
 func (c *ChannelCell) statsDied() {
