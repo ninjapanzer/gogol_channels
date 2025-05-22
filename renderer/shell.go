@@ -2,7 +2,7 @@ package renderer
 
 import (
 	"github.com/gbin/goncurses"
-	glog "gogol2/log"
+	glog "github.com/ninjapanzer/gogol_channels/log"
 )
 
 type ShellRenderer struct {

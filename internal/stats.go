@@ -3,8 +3,8 @@ package internal
 import (
 	"fmt"
 	"github.com/gbin/goncurses"
-	glog "gogol2/log"
-	"gogol2/renderer"
+	glog "github.com/ninjapanzer/gogol_channels/log"
+	"github.com/ninjapanzer/gogol_channels/renderer"
 	"strings"
 	"time"
 )

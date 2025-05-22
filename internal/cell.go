@@ -1,8 +1,8 @@
 package internal
 
 import (
-	"gogol2/game"
-	glog "gogol2/log"
+	"github.com/ninjapanzer/gogol_channels/game"
+	glog "github.com/ninjapanzer/gogol_channels/log"
 	"math/bits"
 	"math/rand"
 	"time"

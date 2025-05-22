@@ -2,8 +2,8 @@ package internal
 
 import (
 	"fmt"
-	glog "gogol2/log"
-	"gogol2/renderer"
+	glog "github.com/ninjapanzer/gogol_channels/log"
+	"github.com/ninjapanzer/gogol_channels/renderer"
 	"math/rand"
 	"time"
 )

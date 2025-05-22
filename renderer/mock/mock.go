@@ -2,7 +2,7 @@ package mock
 
 import (
 	"github.com/gbin/goncurses"
-	"gogol2/renderer"
+	"github.com/ninjapanzer/gogol_channels/renderer"
 	"log/slog"
 )
 

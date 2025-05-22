@@ -3,9 +3,9 @@ package main
 import (
 	"context"
 	"github.com/gbin/goncurses"
-	"gogol2/internal"
-	glog "gogol2/log"
-	"gogol2/renderer"
+	"github.com/ninjapanzer/gogol_channels/internal"
+	glog "github.com/ninjapanzer/gogol_channels/log"
+	"github.com/ninjapanzer/gogol_channels/renderer"
 	"os"
 	"os/signal"
 	"syscall"
