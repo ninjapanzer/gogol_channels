@@ -1,4 +1,4 @@
-module gogol2
+module github.com/ninjapanzer/gogol_channels
 
 go 1.23
 
