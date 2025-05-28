@@ -14,6 +14,7 @@ The built-in renders are a Shell and a Mock.
 
 __Shell__ is built on the goncurses wrapper
 __Mock__ Doesn't render anything but does create logging to trace events
+__ebiten__ uses a GL renderer
 
 #### World Interface
 
