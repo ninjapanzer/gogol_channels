@@ -60,6 +60,12 @@ func (g *EbitenGame) Update() error {
 		g.renderer.charBuffer = append(g.renderer.charBuffer, Key('q'))
 	}
 
+	// Check for window close
+	if ebiten.IsWindowBeingClosed() {
+		g.renderer.charBuffer = append(g.renderer.charBuffer, Key('q'))
+		return ebiten.Termination
+	}
+
 	// Check for mouse input
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
 		g.renderer.mousePressed = true

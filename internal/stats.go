@@ -34,14 +34,16 @@ type Stats struct {
 }
 
 func NewStats(r renderer.Renderer, location string) *Stats {
-	y, x := r.Dimensions()
-	st := r.CreateStatsWindow(3, x, y-3, 1)
+	_, x := r.Dimensions()
+	// Position the stats window in the top right with padding
+	padding := 10 // Padding from the right edge
+	st := r.CreateStatsWindow(3, x/2, 1, x-x/2-padding)
 
 	s := &Stats{
 		r:          r,
 		st:         st,
-		y:          y - 1,
-		x:          1,
+		y:          1,
+		x:          x-x/2-padding,
 		heartbeats: 0,
 		broadcasts: 0,
 		died:       0,
