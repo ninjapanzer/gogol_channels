@@ -22,11 +22,11 @@ build-clean: clean-all
 
 run-ncurses: build
 	@echo "Running GOL with ncurses renderer"
-	@./gol --renderer=ncurses
+	@./gol --renderer=ncurses $(ARGS)
 
 run-ebiten: build
 	@echo "Running GOL with Ebiten renderer"
 	@[ -f gol ] || $(MAKE) build
-	@./gol --renderer=ebiten
+	@./gol --renderer=ebiten $(ARGS)
 
 run: run-ncurses

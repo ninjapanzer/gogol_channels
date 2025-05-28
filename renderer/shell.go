@@ -31,6 +31,11 @@ type ShellRenderer struct {
 	wrapper *goncurses.Window
 	Display *goncurses.Window
 	Padding int
+
+	// Rate control
+	readRate      int64
+	broadcastRate int64
+	rateCallback  func(readRate, broadcastRate int64)
 }
 
 func NewShellRenderer(padding int) Renderer {
@@ -47,8 +52,10 @@ func NewShellRenderer(padding int) Renderer {
 	//goncurses.MouseMask(goncurses.M_B1_PRESSED, nil)
 
 	s := ShellRenderer{
-		screen:  screen,
-		Padding: padding,
+		screen:       screen,
+		Padding:      padding,
+		readRate:     500, // Default read rate in milliseconds
+		broadcastRate: 500, // Default broadcast rate in milliseconds
 	}
 	s.screen.Timeout(0)
 	s.Start()
@@ -143,4 +150,25 @@ func (s *ShellRenderer) CreateStatsWindow(height, width, y, x int) StatsWindow {
 		panic(err)
 	}
 	return &ShellStatsWindow{window: window}
+}
+
+// GetReadRate returns the current read rate
+func (s *ShellRenderer) GetReadRate() int64 {
+	return s.readRate
+}
+
+// GetBroadcastRate returns the current broadcast rate
+func (s *ShellRenderer) GetBroadcastRate() int64 {
+	return s.broadcastRate
+}
+
+// SetRateChangeCallback sets the callback function for rate changes
+func (s *ShellRenderer) SetRateChangeCallback(callback func(readRate, broadcastRate int64)) {
+	s.rateCallback = callback
+}
+
+// SetInitialRates sets the initial read and broadcast rates
+func (s *ShellRenderer) SetInitialRates(readRate, broadcastRate int64) {
+	s.readRate = readRate
+	s.broadcastRate = broadcastRate
 }

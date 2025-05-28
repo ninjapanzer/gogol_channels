@@ -5,6 +5,7 @@ import (
 	"image/color"
 	"log"
 	"sync"
+	"strconv"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -67,11 +68,77 @@ func (g *EbitenGame) Update() error {
 		return ebiten.Termination
 	}
 
+	// Slider constants
+	sliderX := 50
+	sliderY := 30
+	sliderWidth := 300
+	sliderHeight := 20
+
+	// Get current mouse position
+	mouseX, mouseY := ebiten.CursorPosition()
+
 	// Check for mouse input
 	if inpututil.IsMouseButtonJustPressed(ebiten.MouseButtonLeft) {
-		g.renderer.mousePressed = true
-		g.renderer.mouseX, g.renderer.mouseY = ebiten.CursorPosition()
-		g.renderer.charBuffer = append(g.renderer.charBuffer, KEY_MOUSE)
+		// Check if click is on read rate slider
+		if mouseX >= sliderX && mouseX <= sliderX+sliderWidth &&
+			mouseY >= sliderY-5 && mouseY <= sliderY+sliderHeight+5 {
+			g.renderer.sliderDragging = "read"
+			g.renderer.sliderReadX = mouseX - sliderX
+			g.renderer.readRate = int64(g.renderer.sliderReadX * 1000 / sliderWidth)
+			if g.renderer.rateCallback != nil {
+				g.renderer.rateCallback(g.renderer.readRate, g.renderer.broadcastRate)
+			}
+		} else if mouseX >= sliderX && mouseX <= sliderX+sliderWidth &&
+			mouseY >= sliderY+40 && mouseY <= sliderY+45+sliderHeight+5 {
+			// Check if click is on broadcast rate slider
+			g.renderer.sliderDragging = "broadcast"
+			g.renderer.sliderBroadcastX = mouseX - sliderX
+			g.renderer.broadcastRate = int64(g.renderer.sliderBroadcastX * 1000 / sliderWidth)
+			if g.renderer.rateCallback != nil {
+				g.renderer.rateCallback(g.renderer.readRate, g.renderer.broadcastRate)
+			}
+		} else {
+			// Regular mouse click
+			g.renderer.mousePressed = true
+			g.renderer.mouseX, g.renderer.mouseY = mouseX, mouseY
+			g.renderer.charBuffer = append(g.renderer.charBuffer, KEY_MOUSE)
+		}
+	} else if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
+		// Handle slider dragging
+		if g.renderer.sliderDragging == "read" {
+			g.renderer.sliderReadX = mouseX - sliderX
+			if g.renderer.sliderReadX < 0 {
+				g.renderer.sliderReadX = 0
+			}
+			if g.renderer.sliderReadX > sliderWidth {
+				g.renderer.sliderReadX = sliderWidth
+			}
+			g.renderer.readRate = int64(g.renderer.sliderReadX * 1000 / sliderWidth)
+			if g.renderer.rateCallback != nil {
+				g.renderer.rateCallback(g.renderer.readRate, g.renderer.broadcastRate)
+			}
+		} else if g.renderer.sliderDragging == "broadcast" {
+			g.renderer.sliderBroadcastX = mouseX - sliderX
+			if g.renderer.sliderBroadcastX < 0 {
+				g.renderer.sliderBroadcastX = 0
+			}
+			if g.renderer.sliderBroadcastX > sliderWidth {
+				g.renderer.sliderBroadcastX = sliderWidth
+			}
+			g.renderer.broadcastRate = int64(g.renderer.sliderBroadcastX * 1000 / sliderWidth)
+			if g.renderer.rateCallback != nil {
+				g.renderer.rateCallback(g.renderer.readRate, g.renderer.broadcastRate)
+			}
+		} else {
+			// Regular mouse drag
+			g.renderer.mousePressed = true
+			g.renderer.mouseX, g.renderer.mouseY = mouseX, mouseY
+			g.renderer.charBuffer = append(g.renderer.charBuffer, KEY_MOUSE)
+		}
+	} else if inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft) {
+		g.renderer.sliderDragging = ""
+		g.renderer.mousePressed = false
+		g.renderer.charBuffer = append(g.renderer.charBuffer, KEY_MOUSE_RELEASE)
 	} else {
 		g.renderer.mousePressed = false
 	}
@@ -86,6 +153,8 @@ func (g *EbitenGame) Draw(screen *ebiten.Image) {
 	// Define colors
 	offWhite := color.RGBA{240, 240, 240, 255} // Off-white color for cubes
 	blueLineColor := color.RGBA{0, 0, 255, 255} // Blue color for communication lines
+	sliderColor := color.RGBA{200, 200, 200, 255} // Color for sliders
+	sliderHandleColor := color.RGBA{100, 100, 255, 255} // Color for slider handles
 
 	// Draw the buffer
 	for y, row := range g.renderer.buffer {
@@ -185,6 +254,22 @@ func (g *EbitenGame) Draw(screen *ebiten.Image) {
 			}
 		}
 	}
+
+	// Draw sliders for rate control
+	sliderY := 30
+	sliderWidth := 300
+	sliderHeight := 20
+	sliderX := 50
+
+	// Draw read rate slider
+	text.Draw(screen, "Read Rate: " + strconv.FormatInt(g.renderer.readRate, 10) + "ms", g.renderer.fontFace, sliderX, sliderY - 5, color.White)
+	ebitenutil.DrawRect(screen, float64(sliderX), float64(sliderY), float64(sliderWidth), float64(sliderHeight), sliderColor)
+	ebitenutil.DrawRect(screen, float64(sliderX + g.renderer.sliderReadX - 5), float64(sliderY - 5), 10, float64(sliderHeight + 10), sliderHandleColor)
+
+	// Draw broadcast rate slider
+	text.Draw(screen, "Broadcast Rate: " + strconv.FormatInt(g.renderer.broadcastRate, 10) + "ms", g.renderer.fontFace, sliderX, sliderY + 40, color.White)
+	ebitenutil.DrawRect(screen, float64(sliderX), float64(sliderY + 45), float64(sliderWidth), float64(sliderHeight), sliderColor)
+	ebitenutil.DrawRect(screen, float64(sliderX + g.renderer.sliderBroadcastX - 5), float64(sliderY + 40), 10, float64(sliderHeight + 10), sliderHandleColor)
 }
 
 func (g *EbitenGame) Layout(outsideWidth, outsideHeight int) (int, int) {
@@ -204,6 +289,16 @@ type EbitenRenderer struct {
 	mousePressed   bool
 	game           *EbitenGame
 	fontFace       font.Face
+
+	// Rate control
+	readRate       int64
+	broadcastRate  int64
+	rateCallback   func(readRate, broadcastRate int64)
+
+	// Slider state
+	sliderReadX    int
+	sliderBroadcastX int
+	sliderDragging string
 }
 
 // NewEbitenRenderer creates a new Ebiten renderer
@@ -237,6 +332,10 @@ func NewEbitenRenderer(padding int) Renderer {
 		statsWindows:   make([]*EbitenStatsWindow, 0),
 		charBuffer:     make([]Key, 0),
 		fontFace:       basicfont.Face7x13,
+		readRate:       500, // Default read rate in milliseconds
+		broadcastRate:  500, // Default broadcast rate in milliseconds
+		sliderReadX:    150, // Initial slider position
+		sliderBroadcastX: 150, // Initial slider position
 	}
 
 	// Initialize buffer and communications
@@ -348,4 +447,30 @@ func (r *EbitenRenderer) CreateStatsWindow(height, width, y, x int) StatsWindow 
 	}
 	r.statsWindows = append(r.statsWindows, sw)
 	return sw
+}
+
+// GetReadRate returns the current read rate
+func (r *EbitenRenderer) GetReadRate() int64 {
+	return r.readRate
+}
+
+// GetBroadcastRate returns the current broadcast rate
+func (r *EbitenRenderer) GetBroadcastRate() int64 {
+	return r.broadcastRate
+}
+
+// SetRateChangeCallback sets the callback function for rate changes
+func (r *EbitenRenderer) SetRateChangeCallback(callback func(readRate, broadcastRate int64)) {
+	r.rateCallback = callback
+}
+
+// SetInitialRates sets the initial read and broadcast rates
+func (r *EbitenRenderer) SetInitialRates(readRate, broadcastRate int64) {
+	r.readRate = readRate
+	r.broadcastRate = broadcastRate
+
+	// Update slider positions based on the rates
+	sliderWidth := 300 // Must match the width used in the Draw method
+	r.sliderReadX = int(readRate * int64(sliderWidth) / 1000)
+	r.sliderBroadcastX = int(broadcastRate * int64(sliderWidth) / 1000)
 }

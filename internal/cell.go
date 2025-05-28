@@ -4,15 +4,22 @@ import (
 	"github.com/ninjapanzer/gogol_channels/game"
 	glog "github.com/ninjapanzer/gogol_channels/log"
 	"math/bits"
-	"math/rand"
+	"sync/atomic"
 	"time"
+)
+
+// Global variables for cell read and broadcast rates
+var (
+	GlobalReadRate     int64 = 500 // Default read rate in milliseconds
+	GlobalBroadcastRate int64 = 500 // Default broadcast rate in milliseconds
 )
 
 type ChannelCell struct {
 	game.Life
 	state          bool
 	location       string
-	speed          time.Duration
+	readSpeed      time.Duration
+	broadcastSpeed time.Duration
 	ticker         *time.Ticker
 	neighborChans  []<-chan bool
 	neighborStates uint
@@ -22,13 +29,15 @@ type ChannelCell struct {
 }
 
 func NewChannelCell(state bool, location string) *ChannelCell {
-	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
-	speed := time.Duration(rng.Float64()*1000) + 1
+	readRate := time.Duration(atomic.LoadInt64(&GlobalReadRate))
+	broadcastRate := time.Duration(atomic.LoadInt64(&GlobalBroadcastRate))
+
 	b := &ChannelCell{
 		state:          state,
 		location:       location,
-		speed:          speed,
-		ticker:         time.NewTicker(speed * time.Millisecond),
+		readSpeed:      readRate,
+		broadcastSpeed: broadcastRate,
+		ticker:         time.NewTicker(broadcastRate * time.Millisecond),
 		neighborChans:  make([]<-chan bool, 0),
 		neighborStates: 0,
 		broadcast:      make(chan bool, 1),
@@ -82,7 +91,11 @@ func (c *ChannelCell) SetStatsFunc(s func(event CellEvent)) {
 
 func (c *ChannelCell) heartbeat() {
 	for {
-		time.Sleep(time.Duration(c.speed) * time.Millisecond)
+		// Use the current global broadcast rate
+		broadcastRate := time.Duration(atomic.LoadInt64(&GlobalBroadcastRate))
+		c.broadcastSpeed = broadcastRate
+
+		time.Sleep(c.broadcastSpeed * time.Millisecond)
 		if c.state {
 			c.statsHeartbeat()
 			glog.GetLogger().Debug("Heartbeat", "name", c.location)
@@ -97,7 +110,11 @@ func (c *ChannelCell) listenAndUpdate() {
 	var latestStates uint = 0
 
 	for {
-		time.Sleep(time.Duration(c.speed) * time.Millisecond)
+		// Use the current global read rate
+		readRate := time.Duration(atomic.LoadInt64(&GlobalReadRate))
+		c.readSpeed = readRate
+
+		time.Sleep(c.readSpeed * time.Millisecond)
 		for _, neighborChan := range c.neighborChans {
 			select {
 			case _ = <-neighborChan: // If a message is received on this channel

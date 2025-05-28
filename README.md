@@ -128,5 +128,27 @@ To run with the Ebiten renderer: `make run-ebiten`
 
 To build: `make build`
 
+#### Command Line Arguments
+You can set the initial read and broadcast rates using command line arguments:
+
+```
+make run-ebiten ARGS="--read-rate=200 --broadcast-rate=800"
+```
+
+- `--read-rate`: Initial read rate in milliseconds (default: 500)
+- `--broadcast-rate`: Initial broadcast rate in milliseconds (default: 500)
+
+#### Interactive Features
+When using the Ebiten renderer:
+
+1. **Sliders**: You can adjust the read and broadcast rates using the sliders at the top of the window.
+
+2. **Cell Generation**: 
+   - Click anywhere on the grid to create a randomized cluster of cells.
+   - Click and drag to continuously generate random cells as you move the mouse.
+   - The cell generation is somewhat random, with each cell in the cluster having a 70% chance of becoming alive.
+
+3. **Quit**: Press 'q' to quit the application.
+
 ### Screenshot
 ![channeldrivengogol.png](channeldrivengogol.png)

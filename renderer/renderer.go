@@ -6,6 +6,7 @@ type Key int
 // Define key constants that match goncurses keys for compatibility
 const (
 	KEY_MOUSE = 409 // Same as goncurses.KEY_MOUSE
+	KEY_MOUSE_RELEASE = 410 // Custom key for mouse release events
 )
 
 // MouseEvent represents a mouse event
@@ -27,6 +28,11 @@ type Renderer interface {
 	GetMouse() MouseEvent
 	MouseSupport() bool
 	CreateStatsWindow(height, width, y, x int) StatsWindow
+	// Methods for rate control
+	GetReadRate() int64
+	GetBroadcastRate() int64
+	SetRateChangeCallback(func(readRate, broadcastRate int64))
+	SetInitialRates(readRate, broadcastRate int64)
 }
 
 // StatsWindow represents a window for displaying statistics
