@@ -81,13 +81,14 @@ func main() {
 				glog.GetLogger().Debug("mouse event", "y", my, "x", mx)
 
 				// Check if this is a new click or a drag
+				// For a new click, set the dragging flag and initialize last position
 				if !isMouseDragging {
 					isMouseDragging = true
-					lastMouseX, lastMouseY = mx, my
+					// Don't initialize lastMouseX/Y here to ensure we generate cells on first click
 				}
 
 				// Always generate cells on first click, and on drag when position changes
-				if !isMouseDragging || mx != lastMouseX || my != lastMouseY {
+				if mx != lastMouseX || my != lastMouseY || (lastMouseX == 0 && lastMouseY == 0) {
 					// Create a randomized cluster of cells in a circle of radius 5
 					radius := 2 // Radius of 2 will create a circle of about 5 cells
 					for dy := -radius; dy <= radius; dy++ {
