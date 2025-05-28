@@ -20,11 +20,11 @@ build-clean: clean-all
 	@echo "Building Evented GOL with clean cache"
 	@go build -o gol ./cmd/main.go
 
-run-ncurses:
+run-ncurses: build
 	@echo "Running GOL with ncurses renderer"
 	@./gol --renderer=ncurses
 
-run-ebiten:
+run-ebiten: build
 	@echo "Running GOL with Ebiten renderer"
 	@[ -f gol ] || $(MAKE) build
 	@./gol --renderer=ebiten

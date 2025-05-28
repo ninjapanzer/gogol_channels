@@ -1,6 +1,7 @@
 package renderer
 
 import (
+	"github.com/hajimehoshi/ebiten/v2/ebitenutil"
 	"image/color"
 	"log"
 	"sync"
@@ -93,6 +94,37 @@ func (g *EbitenGame) Draw(screen *ebiten.Image) {
 
 	// Draw stats windows
 	for _, sw := range g.renderer.statsWindows {
+		// Calculate the background rectangle dimensions
+		maxLineLength := 0
+		lineCount := 0
+		for _, line := range sw.buffer {
+			if line != "" {
+				lineCount++
+				if len(line) > maxLineLength {
+					maxLineLength = len(line)
+				}
+			}
+		}
+
+		// Add some padding around the text
+		padding := 5
+		bgWidth := maxLineLength*7 + padding*2 // Approximate width based on font size
+		bgHeight := lineCount*g.renderer.cellSize + padding*2
+
+		// Create a semi-transparent black background (20% alpha)
+		bgColor := color.RGBA{0, 0, 0, 51} // 51 is 20% of 255
+
+		// Draw the background
+		ebitenutil.DrawRect(screen, float64(sw.x-padding), float64(sw.y-padding), float64(bgWidth), float64(bgHeight), bgColor)
+
+		// Draw a border around the background
+		borderColor := color.RGBA{255, 255, 255, 128}                                                                          // Semi-transparent white
+		ebitenutil.DrawRect(screen, float64(sw.x-padding), float64(sw.y-padding), float64(bgWidth), 1, borderColor)            // Top
+		ebitenutil.DrawRect(screen, float64(sw.x-padding), float64(sw.y-padding), 1, float64(bgHeight), borderColor)           // Left
+		ebitenutil.DrawRect(screen, float64(sw.x-padding), float64(sw.y-padding+bgHeight-1), float64(bgWidth), 1, borderColor) // Bottom
+		ebitenutil.DrawRect(screen, float64(sw.x-padding+bgWidth-1), float64(sw.y-padding), 1, float64(bgHeight), borderColor) // Right
+
+		// Draw the text
 		for y, line := range sw.buffer {
 			if line != "" {
 				text.Draw(screen, line, g.renderer.fontFace, sw.x, sw.y+(y+1)*g.renderer.cellSize, color.White)
@@ -107,16 +139,16 @@ func (g *EbitenGame) Layout(outsideWidth, outsideHeight int) (int, int) {
 
 // EbitenRenderer implements the Renderer interface using Ebiten
 type EbitenRenderer struct {
-	width, height int
-	cellSize      int
-	buffer        [][]string
-	statsWindows  []*EbitenStatsWindow
-	charBuffer    []Key
-	charMutex     sync.Mutex
+	width, height  int
+	cellSize       int
+	buffer         [][]string
+	statsWindows   []*EbitenStatsWindow
+	charBuffer     []Key
+	charMutex      sync.Mutex
 	mouseX, mouseY int
-	mousePressed  bool
-	game          *EbitenGame
-	fontFace      font.Face
+	mousePressed   bool
+	game           *EbitenGame
+	fontFace       font.Face
 }
 
 // NewEbitenRenderer creates a new Ebiten renderer
@@ -142,13 +174,13 @@ func NewEbitenRenderer(padding int) Renderer {
 	ebiten.SetWindowTitle("Game of Life - Ebiten")
 
 	r := &EbitenRenderer{
-		width:       width,
-		height:      height,
-		cellSize:    cellSize,
-		buffer:      make([][]string, height),
+		width:        width,
+		height:       height,
+		cellSize:     cellSize,
+		buffer:       make([][]string, height),
 		statsWindows: make([]*EbitenStatsWindow, 0),
-		charBuffer:  make([]Key, 0),
-		fontFace:    basicfont.Face7x13,
+		charBuffer:   make([]Key, 0),
+		fontFace:     basicfont.Face7x13,
 	}
 
 	// Initialize buffer

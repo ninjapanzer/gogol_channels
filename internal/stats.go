@@ -36,14 +36,16 @@ type Stats struct {
 func NewStats(r renderer.Renderer, location string) *Stats {
 	_, x := r.Dimensions()
 	// Position the stats window in the top right with padding
-	padding := 10 // Padding from the right edge
-	st := r.CreateStatsWindow(3, x/2, 1, x-x/2-padding)
+	padding := 20 // Padding from the right edge
+	// Use a smaller width for the stats window to make it fit the text better
+	statsWidth := 80 // Approximate width based on the text length
+	st := r.CreateStatsWindow(3, statsWidth, 1, x-statsWidth-padding)
 
 	s := &Stats{
 		r:          r,
 		st:         st,
 		y:          1,
-		x:          x-x/2-padding,
+		x:          x-statsWidth-padding,
 		heartbeats: 0,
 		broadcasts: 0,
 		died:       0,
@@ -121,7 +123,9 @@ func (s *Stats) String() string {
 
 func (s *Stats) Update() {
 	m := s.String()
+	// Clear the entire line
 	s.st.MovePrint(0, 0, strings.Repeat(" ", len(m)+20))
+	// Position the text at the right edge of the window
 	s.st.MovePrint(1, 0, m)
 	glog.GetLogger().Debug("stats update", "Data", s.String())
 	s.st.NoutRefresh()
