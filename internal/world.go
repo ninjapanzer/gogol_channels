@@ -81,7 +81,7 @@ func (w *ChannelWorld[T]) setupNeighborhood() {
 func linkNeighbors(cells [][]*ChannelCell, cell *ChannelCell, y, x, width, height int) {
 	for i := -1; i <= 1; i++ {
 		for j := -1; j <= 1; j++ {
-			if i == y && j == x {
+			if i == 0 && j == 0 {
 				continue
 			}
 			if y+i < 0 {

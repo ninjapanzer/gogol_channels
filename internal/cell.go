@@ -96,12 +96,11 @@ func (c *ChannelCell) heartbeat() {
 		c.broadcastSpeed = broadcastRate
 
 		time.Sleep(c.broadcastSpeed * time.Millisecond)
-		if c.state {
-			c.statsHeartbeat()
-			glog.GetLogger().Debug("Heartbeat", "name", c.location)
-			c.statsBroadcast()
-			c.broadcast <- true
-		}
+		// Broadcast state regardless of whether the cell is alive or dead
+		c.statsHeartbeat()
+		glog.GetLogger().Debug("Heartbeat", "name", c.location)
+		c.statsBroadcast()
+		c.broadcast <- c.state
 	}
 }
 
@@ -115,15 +114,17 @@ func (c *ChannelCell) listenAndUpdate() {
 		c.readSpeed = readRate
 
 		time.Sleep(c.readSpeed * time.Millisecond)
+		// Reset latestStates before each update cycle to avoid carrying over bits from previous cycles
+		latestStates = 0
 		for _, neighborChan := range c.neighborChans {
 			select {
 			case _ = <-neighborChan: // If a message is received on this channel
-				latestStates <<= 1
-				latestStates |= 1
+				// Set the least significant bit to 1 to indicate a live neighbor
+				latestStates = (latestStates << 1) | 1
 				//gotUpdate = true
 			default:
-				latestStates <<= 1
-				latestStates |= 0
+				// Set the least significant bit to 0 to indicate a dead neighbor
+				latestStates = (latestStates << 1) | 0
 			}
 		}
 		glog.GetLogger().Debug("Consumed", "Latest", latestStates)
@@ -155,7 +156,8 @@ func (c *ChannelCell) computeStateFromNeighbors(latestStates uint) (bool, string
 	//
 	// Simple rule: a cell becomes alive if any of its neighbors are alive (just an example)
 	aliveCount := 0
-	c.neighborStates = c.neighborStates ^ latestStates
+	// Use the latest states directly instead of XORing with previous states
+	c.neighborStates = latestStates
 
 	aliveCount = bits.OnesCount(c.neighborStates)
 
