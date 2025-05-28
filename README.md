@@ -51,9 +51,81 @@ Compositing updates by rendering reactively to cellular state changes. This will
 This will require a cell to become aware of its render position to avoid creating a double buffer for collecting the cell state with a mutex.
 
 ### Usage
-To run use `make`
 
-To build use `make build`
+#### Dependencies
+This project requires the following dependencies:
+- Go 1.24 or later
+- ncurses development headers (for the Shell renderer)
+- pkg-config (recommended for finding ncurses)
+- X11 development headers (for the Ebiten renderer)
+- OpenGL development headers (for the Ebiten renderer)
+
+If you're using Nix, the dependencies are automatically managed through the flake.nix file.
+
+For other systems, you'll need to install the following packages:
+
+For ncurses (required for the Shell renderer):
+- Debian/Ubuntu: `apt-get install libncurses-dev pkg-config`
+- Fedora/RHEL: `dnf install ncurses-devel pkgconfig`
+- macOS: `brew install ncurses pkg-config`
+
+For X11 and OpenGL (required for the Ebiten renderer on Linux):
+- Debian/Ubuntu: `apt-get install libx11-dev libxrandr-dev libxinerama-dev libxcursor-dev libxi-dev libxxf86vm-dev libgl1-mesa-dev libglu1-mesa-dev`
+- Fedora/RHEL: `dnf install libX11-devel libXrandr-devel libXinerama-devel libXcursor-devel libXi-devel libXxf86vm-devel mesa-libGL-devel mesa-libGLU-devel`
+- macOS: `brew install glfw3` (Ebiten uses different backends on macOS, but may still need some OpenGL libraries)
+
+##### Troubleshooting Build Issues
+If you encounter errors about missing header files even after installing the required packages:
+
+1. Ensure CGO is enabled: `export CGO_ENABLED=1`
+2. If using a version manager like asdf, you might need to specify include paths:
+   ```
+   export CGO_CFLAGS="-I/usr/include -I/usr/include/X11 -I/usr/include/GL"
+   export CGO_LDFLAGS="-L/usr/lib -lncurses -lX11 -lXrandr -lXinerama -lXcursor -lXi -lXxf86vm -lGL -lGLU"
+   ```
+3. Or use pkg-config (recommended):
+   ```
+   export CGO_CFLAGS="`pkg-config --cflags ncurses x11 xrandr xinerama xcursor xi gl glu xf86vm`"
+   export CGO_LDFLAGS="`pkg-config --libs ncurses x11 xrandr xinerama xcursor xi gl glu xf86vm`"
+   ```
+
+For specific errors:
+- Missing `curses.h`: Install libncurses-dev
+- Missing `X11/Xlib.h`: Install libx11-dev
+- Missing `GL/glx.h`: Install libgl1-mesa-dev
+- Cannot find `-lXxf86vm`: Install libxxf86vm-dev (Debian/Ubuntu) or libXxf86vm-devel (Fedora/RHEL)
+
+##### Resolving Conflicts Between Nix and asdf
+If you're using Nix for system dependencies and asdf for Go version management, you might encounter conflicts. This happens because Nix provides its own environment, while asdf manages Go separately. To resolve this:
+
+1. Update the Makefile to explicitly use the Go installation from asdf:
+   ```
+   # Replace 'go' with the full path to the asdf-managed Go binary
+   ${HOME}/.asdf/installs/golang/<version>/go/bin/go
+   ```
+
+2. Set the GOPATH environment variable to point to the asdf packages directory:
+   ```
+   GOPATH=${HOME}/.asdf/installs/golang/<version>/packages
+   ```
+
+3. Ensure the go.mod file specifies a Go version compatible with your asdf-managed Go:
+   ```
+   go 1.24  # If using Go 1.24.x from asdf
+   ```
+
+4. For CGO builds, include all necessary library flags:
+   ```
+   CGO_CFLAGS="`pkg-config --cflags ncurses x11 xrandr xinerama xcursor xi gl glu xf86vm`"
+   CGO_LDFLAGS="`pkg-config --libs ncurses x11 xrandr xinerama xcursor xi gl glu xf86vm`"
+   ```
+
+#### Running
+To run with the ncurses renderer: `make run-ncurses`
+
+To run with the Ebiten renderer: `make run-ebiten`
+
+To build: `make build`
 
 ### Screenshot
 ![channeldrivengogol.png](channeldrivengogol.png)

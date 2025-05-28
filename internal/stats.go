@@ -2,7 +2,6 @@ package internal
 
 import (
 	"fmt"
-	"github.com/gbin/goncurses"
 	glog "github.com/ninjapanzer/gogol_channels/log"
 	"github.com/ninjapanzer/gogol_channels/renderer"
 	"strings"
@@ -23,7 +22,7 @@ type CellEvent struct {
 
 type Stats struct {
 	r                  renderer.Renderer
-	st                 *goncurses.Window
+	st                 renderer.StatsWindow
 	x, y               int
 	heartbeats         int64
 	heartbeatPerSecond int64
@@ -36,10 +35,8 @@ type Stats struct {
 
 func NewStats(r renderer.Renderer, location string) *Stats {
 	y, x := r.Dimensions()
-	st, err := goncurses.NewWindow(3, x, y-3, 1)
-	if err != nil {
-		panic(err)
-	}
+	st := r.CreateStatsWindow(3, x, y-3, 1)
+
 	s := &Stats{
 		r:          r,
 		st:         st,

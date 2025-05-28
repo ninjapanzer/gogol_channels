@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"github.com/gbin/goncurses"
 	"github.com/ninjapanzer/gogol_channels/internal"
 	glog "github.com/ninjapanzer/gogol_channels/log"
@@ -12,17 +13,33 @@ import (
 )
 
 func main() {
+	// Parse command line arguments
+	rendererType := flag.String("renderer", "ncurses", "Renderer to use (ncurses or ebiten)")
+	flag.Parse()
+
 	closer := glog.InitLogger()
 	defer closer()
 	ctx, cancel := context.WithCancel(context.Background())
 	cancelChan := make(chan os.Signal, 1)
 	signal.Notify(cancelChan, syscall.SIGTERM, syscall.SIGINT)
-	r := renderer.NewShellRenderer(0)
+
+	// Create the appropriate renderer based on the command line argument
+	var r renderer.Renderer
+	switch *rendererType {
+	case "ebiten":
+		r = renderer.NewEbitenRenderer(0)
+	default:
+		r = renderer.NewShellRenderer(0)
+	}
 	defer r.End()
 
 	cWorld := internal.NewChannelWorld[internal.ChannelCell](r, 0.13)
 	cWorld.Bootstrap()
-	goncurses.Update()
+
+	// Only call goncurses.Update() if using the ncurses renderer
+	if *rendererType == "ncurses" {
+		goncurses.Update()
+	}
 
 	//go func() {
 	//	for {
@@ -57,7 +74,7 @@ func main() {
 				//time.Sleep(30 * time.Millisecond)
 				//Makes render choppy this one routine can run at cpu time
 				//cWorld.DrawWorld()
-				goncurses.Update()
+				r.Refresh()
 			}
 		}
 	}()

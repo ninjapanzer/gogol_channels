@@ -5,6 +5,27 @@ import (
 	glog "github.com/ninjapanzer/gogol_channels/log"
 )
 
+// ShellStatsWindow implements the StatsWindow interface using goncurses
+type ShellStatsWindow struct {
+	window *goncurses.Window
+}
+
+func (sw *ShellStatsWindow) MovePrint(y, x int, str string) {
+	sw.window.MovePrint(y, x, str)
+}
+
+func (sw *ShellStatsWindow) Clear() {
+	sw.window.Clear()
+}
+
+func (sw *ShellStatsWindow) NoutRefresh() {
+	sw.window.NoutRefresh()
+}
+
+func (sw *ShellStatsWindow) Delete() error {
+	return sw.window.Delete()
+}
+
 type ShellRenderer struct {
 	screen  *goncurses.Window
 	wrapper *goncurses.Window
@@ -100,6 +121,26 @@ func (s *ShellRenderer) Clear() {
 	s.Display.Clear()
 }
 
-func (s *ShellRenderer) GetChar() goncurses.Key {
-	return s.screen.GetChar()
+func (s *ShellRenderer) GetChar() Key {
+	return Key(s.screen.GetChar())
+}
+
+func (s *ShellRenderer) GetMouse() MouseEvent {
+	mevent := goncurses.GetMouse()
+	return MouseEvent{
+		X: int(mevent.X),
+		Y: int(mevent.Y),
+	}
+}
+
+func (s *ShellRenderer) MouseSupport() bool {
+	return goncurses.MouseOk()
+}
+
+func (s *ShellRenderer) CreateStatsWindow(height, width, y, x int) StatsWindow {
+	window, err := goncurses.NewWindow(height, width, y, x)
+	if err != nil {
+		panic(err)
+	}
+	return &ShellStatsWindow{window: window}
 }

@@ -17,6 +17,16 @@
       default = pkgs.mkShell {
         buildInputs = with pkgs; [
           ncurses
+          ncurses.dev
+          pkg-config
+          xorg.libX11.dev
+          xorg.libXrandr.dev
+          xorg.libXinerama.dev
+          xorg.libXcursor.dev
+          xorg.libXi.dev
+          xorg.libXxf86vm.dev
+          libGL
+          libGLU
         ];
       };
     });
